@@ -177,4 +177,6 @@ oneway interface IStatusBar
      * Nitrogen
      */
     void toggleCameraFlash();
+    void toggleCameraFlashState(boolean enable);
+
 }
