@@ -64,6 +64,7 @@ import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentCallbacks2;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -73,6 +74,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.database.ContentObserver;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -730,6 +732,9 @@ public class StatusBar extends SystemUI implements DemoMode,
         initCoreOverlays();
 
         createAndAddWindows(result);
+
+        mNosSettingsObserver.observe();
+        mNosSettingsObserver.update();
 
         // Make sure we always have the most current wallpaper info.
         IntentFilter wallpaperChangedFilter = new IntentFilter(Intent.ACTION_WALLPAPER_CHANGED);
@@ -3594,6 +3599,10 @@ public class StatusBar extends SystemUI implements DemoMode,
         mKeyguardIndicationController.showTransientIndication(R.string.phone_hint);
     }
 
+    public void onCustomHintStarted() {
+        mKeyguardIndicationController.showTransientIndication(R.string.custom_hint);
+    }
+
     public void onTrackingStopped(boolean expand) {
         if (mState == StatusBarState.KEYGUARD || mState == StatusBarState.SHADE_LOCKED) {
             if (!expand && !mUnlockMethodCache.canSkipBouncer()) {
@@ -3787,6 +3796,38 @@ public class StatusBar extends SystemUI implements DemoMode,
         }
     };
 
+    private NosSettingsObserver mNosSettingsObserver = new NosSettingsObserver(mHandler);
+    private class NosSettingsObserver extends ContentObserver {
+        NosSettingsObserver(Handler handler) {
+            super(handler);
+        }
+         void observe() {
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.HEADS_UP_STOPLIST_VALUES), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.HEADS_UP_BLACKLIST_VALUES), false, this);
+        }
+         @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            update();
+        }
+         public void update() {
+            setHeadsUpStoplist();
+            setHeadsUpBlacklist();
+        }
+    }
+
+    private void setHeadsUpStoplist() {
+        if (mPresenter != null)
+            mPresenter.setHeadsUpStoplist();
+    }
+
+    private void setHeadsUpBlacklist() {
+        if (mPresenter != null)
+            mPresenter.setHeadsUpBlacklist();
+    }
+
     public int getWakefulnessState() {
         return mWakefulnessLifecycle.getWakefulness();
     }
@@ -3845,7 +3886,7 @@ public class StatusBar extends SystemUI implements DemoMode,
             return;
         }
         if (!mNotificationPanel.canCameraGestureBeLaunched(
-                mStatusBarKeyguardViewManager.isShowing() && mExpandedVisible)) {
+                mStatusBarKeyguardViewManager.isShowing() && mExpandedVisible, source)) {
             if (DEBUG_CAMERA_LIFT) Slog.d(TAG, "Can't launch camera right now, mExpandedVisible: " +
                     mExpandedVisible);
             return;

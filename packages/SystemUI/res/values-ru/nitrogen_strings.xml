@@ -29,4 +29,10 @@
     <string name="keyguard_plugged_in_dash_charging">Dash зарядка</string>
 
     <string name="statusbar_items_title">Редактирование иконок</string>
+
+    <string name="lockscreen_default">По умолчанию</string>
+    <string name="lockscreen_hidden">Нет</string>
+
+    <!-- Shows when people have clicked on the custom lockscreen shortcut [CHAR LIMIT=60] -->
+    <string name="custom_hint">Проведите пальцем от иконки в сторону центра экрана</string>
 </resources>
